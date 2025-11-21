@@ -20,23 +20,26 @@ def upgrade() -> None:
     # Create enum type with IF NOT EXISTS check using raw SQL
     connection = op.get_bind()
     
-    # Create enum type if it doesn't exist
+    # Drop enum if exists (to handle re-runs) and create it fresh
     connection.execute(sa.text("""
         DO $$ BEGIN
+            DROP TYPE IF EXISTS paymentstatus CASCADE;
             CREATE TYPE paymentstatus AS ENUM ('pending', 'succeeded', 'canceled');
         EXCEPTION
-            WHEN duplicate_object THEN null;
+            WHEN OTHERS THEN null;
         END $$;
     """))
     
     # Create payments table
+    # Use checkfirst=True for enum to prevent SQLAlchemy from trying to create it again
+    paymentstatus_enum = sa.Enum('pending', 'succeeded', 'canceled', name='paymentstatus', create_type=False)
     op.create_table(
         'payments',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('phone_number', sa.String(), nullable=False),
         sa.Column('amount', sa.Float(), nullable=False),
-        sa.Column('status', sa.Enum('pending', 'succeeded', 'canceled', name='paymentstatus'), nullable=False),
+        sa.Column('status', paymentstatus_enum, nullable=False),
         sa.Column('yookassa_payment_id', sa.String(), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
         sa.PrimaryKeyConstraint('id')
