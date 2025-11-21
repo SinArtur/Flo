@@ -1,7 +1,8 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 from telegram.ext import ContextTypes
 from datetime import datetime
 from typing import Optional
+import os
 from src.infrastructure.database.repositories import UserRepository
 from src.infrastructure.database.base import async_session_maker
 from src.core.entities.user import User
@@ -37,25 +38,16 @@ async def show_consent_message(
     user: Optional[User],
     user_id: int
 ):
-    """Показывает сообщение с согласием"""
-    # Build Web App URL
-    # Telegram Web App requires HTTPS URL (except for localhost in development)
-    if settings.webhook_url:
-        # Ensure URL doesn't have trailing slash
-        base_url = settings.webhook_url.rstrip('/')
-        web_app_url = f"{base_url}/webapp/privacy_policy.html"
-    else:
-        # Fallback - but this won't work in production Telegram Web App
-        # Telegram requires HTTPS for Web Apps (except localhost)
-        web_app_url = "http://localhost:8000/webapp/privacy_policy.html"
-        print("WARNING: WEBHOOK_URL not set. Web App may not work in production!")
+    """Показывает сообщение с согласием и отправляет файл с политикой"""
+    # Путь к файлу с политикой
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    policy_file_path = os.path.join(
+        current_dir, "..", "..", "presentation", "web_app", "privacy_policy.txt"
+    )
+    policy_file_path = os.path.abspath(policy_file_path)
     
-    # Create keyboard with Web App button and Continue button
+    # Создаем клавиатуру только с кнопкой "Продолжить"
     keyboard = [
-        [InlineKeyboardButton(
-            "📄 Ознакомиться с политикой",
-            web_app=WebAppInfo(url=web_app_url)
-        )],
         [InlineKeyboardButton("✅ Продолжить", callback_data="accept_consent")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -66,14 +58,46 @@ async def show_consent_message(
 • Быть старше 18 лет
 • Ознакомиться с Политикой конфиденциальности
 
-[📄 Ознакомиться с политикой] 
-[✅ Продолжить]"""
+📄 Политика конфиденциальности отправлена файлом выше.
+
+Нажимая "✅ Продолжить", вы подтверждаете, что:
+• Вам исполнилось 18 лет
+• Вы ознакомились с Политикой конфиденциальности
+• Вы согласны с условиями использования"""
     
-    if update.message:
-        await update.message.reply_text(consent_text, reply_markup=reply_markup)
-    elif update.callback_query:
-        await update.callback_query.message.reply_text(consent_text, reply_markup=reply_markup)
-        await update.callback_query.answer()
+    # Отправляем файл с политикой
+    if os.path.exists(policy_file_path):
+        try:
+            with open(policy_file_path, 'rb') as policy_file:
+                if update.message:
+                    await update.message.reply_document(
+                        document=InputFile(policy_file, filename="Политика_конфиденциальности.txt"),
+                        caption="📄 Политика конфиденциальности"
+                    )
+                    await update.message.reply_text(consent_text, reply_markup=reply_markup)
+                elif update.callback_query:
+                    await update.callback_query.message.reply_document(
+                        document=InputFile(policy_file, filename="Политика_конфиденциальности.txt"),
+                        caption="📄 Политика конфиденциальности"
+                    )
+                    await update.callback_query.message.reply_text(consent_text, reply_markup=reply_markup)
+                    await update.callback_query.answer()
+        except Exception as e:
+            print(f"Error sending policy file: {e}")
+            # Fallback - отправляем только текст
+            if update.message:
+                await update.message.reply_text(consent_text, reply_markup=reply_markup)
+            elif update.callback_query:
+                await update.callback_query.message.reply_text(consent_text, reply_markup=reply_markup)
+                await update.callback_query.answer()
+    else:
+        print(f"Policy file not found at: {policy_file_path}")
+        # Fallback - отправляем только текст
+        if update.message:
+            await update.message.reply_text(consent_text, reply_markup=reply_markup)
+        elif update.callback_query:
+            await update.callback_query.message.reply_text(consent_text, reply_markup=reply_markup)
+            await update.callback_query.answer()
 
 
 async def handle_consent_acceptance(
