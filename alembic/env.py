@@ -1,4 +1,3 @@
-from logging.config import fileconfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
@@ -10,10 +9,6 @@ from src.infrastructure.database.models import PaymentModel, UserRequestModel, U
 
 # this is the Alembic Config object
 config = context.config
-
-# Interpret the config file for Python logging.
-if config.config_file_name is not None:
-    fileconfig(config.config_file_name)
 
 # Set the SQLAlchemy URL from settings
 config.set_main_option("sqlalchemy.url", settings.database_url)

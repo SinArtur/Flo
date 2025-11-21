@@ -17,9 +17,17 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enum type
-    paymentstatus_enum = sa.Enum('pending', 'succeeded', 'canceled', name='paymentstatus')
-    paymentstatus_enum.create(op.get_bind(), checkfirst=True)
+    # Create enum type with IF NOT EXISTS check using raw SQL
+    connection = op.get_bind()
+    
+    # Create enum type if it doesn't exist
+    connection.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE paymentstatus AS ENUM ('pending', 'succeeded', 'canceled');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """))
     
     # Create payments table
     op.create_table(
@@ -28,7 +36,7 @@ def upgrade() -> None:
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('phone_number', sa.String(), nullable=False),
         sa.Column('amount', sa.Float(), nullable=False),
-        sa.Column('status', paymentstatus_enum, nullable=False),
+        sa.Column('status', sa.Enum('pending', 'succeeded', 'canceled', name='paymentstatus'), nullable=False),
         sa.Column('yookassa_payment_id', sa.String(), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
         sa.PrimaryKeyConstraint('id')
