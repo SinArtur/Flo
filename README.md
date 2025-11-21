@@ -40,8 +40,8 @@ src/
 ### 1. Клонирование репозитория
 
 ```bash
-git clone <repository-url>
-cd Flo-hack
+git clone https://github.com/SinArtur/Flo.git
+cd Flo
 ```
 
 ### 2. Настройка переменных окружения
@@ -165,4 +165,3 @@ alembic upgrade head
 ## Лицензия
 
 MIT
-
