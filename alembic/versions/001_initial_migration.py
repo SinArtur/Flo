@@ -30,24 +30,24 @@ def upgrade() -> None:
         END $$;
     """))
     
-    # Create payments table
-    # Use checkfirst=True for enum to prevent SQLAlchemy from trying to create it again
-    paymentstatus_enum = sa.Enum('pending', 'succeeded', 'canceled', name='paymentstatus', create_type=False)
-    op.create_table(
-        'payments',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('phone_number', sa.String(), nullable=False),
-        sa.Column('amount', sa.Float(), nullable=False),
-        sa.Column('status', paymentstatus_enum, nullable=False),
-        sa.Column('yookassa_payment_id', sa.String(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-        sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_payments_id'), 'payments', ['id'], unique=False)
-    op.create_index(op.f('ix_payments_user_id'), 'payments', ['user_id'], unique=False)
-    op.create_index(op.f('ix_payments_phone_number'), 'payments', ['phone_number'], unique=False)
-    op.create_index(op.f('ix_payments_yookassa_payment_id'), 'payments', ['yookassa_payment_id'], unique=True)
+    # Create payments table using raw SQL to avoid SQLAlchemy trying to create enum
+    connection.execute(sa.text("""
+        CREATE TABLE IF NOT EXISTS payments (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            phone_number VARCHAR NOT NULL,
+            amount DOUBLE PRECISION NOT NULL,
+            status paymentstatus NOT NULL,
+            yookassa_payment_id VARCHAR,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+        );
+    """))
+    
+    # Create indexes
+    op.create_index('ix_payments_id', 'payments', ['id'], unique=False)
+    op.create_index('ix_payments_user_id', 'payments', ['user_id'], unique=False)
+    op.create_index('ix_payments_phone_number', 'payments', ['phone_number'], unique=False)
+    op.create_index('ix_payments_yookassa_payment_id', 'payments', ['yookassa_payment_id'], unique=True)
     
     # Create user_requests table
     op.create_table(
