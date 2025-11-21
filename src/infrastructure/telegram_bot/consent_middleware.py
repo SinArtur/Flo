@@ -38,12 +38,17 @@ async def show_consent_message(
     user_id: int
 ):
     """Показывает сообщение с согласием"""
-    # Build Web App URL - используем относительный путь или полный URL
+    # Build Web App URL
+    # Telegram Web App requires HTTPS URL (except for localhost in development)
     if settings.webhook_url:
-        web_app_url = f"{settings.webhook_url}/webapp/privacy_policy.html"
+        # Ensure URL doesn't have trailing slash
+        base_url = settings.webhook_url.rstrip('/')
+        web_app_url = f"{base_url}/webapp/privacy_policy.html"
     else:
-        # Для локальной разработки можно использовать localhost
+        # Fallback - but this won't work in production Telegram Web App
+        # Telegram requires HTTPS for Web Apps (except localhost)
         web_app_url = "http://localhost:8000/webapp/privacy_policy.html"
+        print("WARNING: WEBHOOK_URL not set. Web App may not work in production!")
     
     # Create keyboard with Web App button and Continue button
     keyboard = [
