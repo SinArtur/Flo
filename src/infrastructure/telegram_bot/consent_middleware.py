@@ -104,31 +104,41 @@ async def handle_consent_acceptance(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
-    """Обрабатывает принятие согласия"""
+    """Обрабатывает принятие согласия (deprecated - используйте start_after_consent в handlers.py)"""
+    # Эта функция оставлена для обратной совместимости
+    # Теперь согласие обрабатывается через ConversationHandler в handlers.py
     user_id = update.effective_user.id
     username = update.effective_user.username
     
-    async with async_session_maker() as session:
-        user_repo = UserRepository(session)
-        user = await user_repo.get_by_user_id(user_id)
-        
-        if user:
-            # Update existing user
-            user.consent_given_at = datetime.utcnow()
-            user.username = username
-            await user_repo.update(user)
-        else:
-            # Create new user
-            new_user = User(
-                user_id=user_id,
-                username=username,
-                consent_given_at=datetime.utcnow()
-            )
-            await user_repo.create(new_user)
+    try:
+        async with async_session_maker() as session:
+            user_repo = UserRepository(session)
+            user = await user_repo.get_by_user_id(user_id)
+            
+            if user:
+                # Update existing user
+                user.consent_given_at = datetime.utcnow()
+                user.username = username
+                await user_repo.update(user)
+            else:
+                # Create new user
+                new_user = User(
+                    user_id=user_id,
+                    username=username,
+                    consent_given_at=datetime.utcnow()
+                )
+                await user_repo.create(new_user)
+            
+            await session.commit()
         
         # Show welcome message
         await update.callback_query.answer("✅ Согласие принято")
         await show_welcome_message(update, context)
+    except Exception as e:
+        print(f"Error in handle_consent_acceptance: {e}")
+        import traceback
+        traceback.print_exc()
+        await update.callback_query.answer("❌ Произошла ошибка. Попробуйте снова.", show_alert=True)
 
 
 async def show_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
