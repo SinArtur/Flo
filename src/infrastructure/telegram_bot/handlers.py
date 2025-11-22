@@ -86,6 +86,23 @@ async def start_after_consent(update: Update, context: ContextTypes.DEFAULT_TYPE
         return ConversationHandler.END
 
 
+async def start_from_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Активирует ConversationHandler для пользователей с согласием, которые отправляют сообщение"""
+    # Проверяем согласие
+    has_consent = await check_consent(update, context)
+    if not has_consent:
+        # Если согласия нет, не обрабатываем - вернется ConversationHandler.END
+        return ConversationHandler.END
+    
+    # Если согласие есть, активируем conversation
+    # Показываем welcome message
+    await show_welcome_message(update, context)
+    
+    # Активируем conversation и возвращаем WAITING_PHONE
+    # Следующее сообщение от пользователя будет обработано через handle_phone
+    return WAITING_PHONE
+
+
 async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle phone number input"""
     # Check consent
@@ -94,6 +111,11 @@ async def handle_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     
     user_id = update.effective_user.id
+    
+    # Получаем текст сообщения
+    if not update.message or not update.message.text:
+        return WAITING_PHONE
+    
     phone_text = update.message.text.strip()
     
     # Rate limiting check
@@ -210,12 +232,18 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def setup_handlers(application):
     """Setup all bot handlers"""
     # Conversation handler for main flow
-    # Добавляем CallbackQueryHandler в entry_points, чтобы активировать ConversationHandler после согласия
+    # Добавляем MessageHandler в entry_points, чтобы активировать ConversationHandler для пользователей с согласием
     conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler("start", start),
-            # Обработчик для активации ConversationHandler после принятия согласия
-            CallbackQueryHandler(start_after_consent, pattern="^accept_consent$")
+            # Обработчик для активации ConversationHandler после принятия согласия через callback
+            CallbackQueryHandler(start_after_consent, pattern="^accept_consent$"),
+            # Обработчик для активации ConversationHandler для пользователей с согласием, которые отправляют сообщение
+            # Важно: этот handler должен быть ПОСЛЕ CommandHandler, чтобы команды обрабатывались первыми
+            MessageHandler(
+                filters.TEXT & ~filters.COMMAND,
+                start_from_message
+            )
         ],
         states={
             WAITING_PHONE: [
@@ -223,7 +251,12 @@ def setup_handlers(application):
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
+        # Явно указываем параметры для работы с несколькими пользователями
+        per_user=True,
+        per_chat=True,
+        per_message=False,  # Не обрабатываем каждое сообщение отдельно, используем состояние
     )
     
+    # ConversationHandler должен быть добавлен первым, чтобы он обрабатывал сообщения
     application.add_handler(conv_handler)
 
