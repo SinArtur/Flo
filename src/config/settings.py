@@ -5,9 +5,9 @@ from typing import Optional
 class Settings(BaseSettings):
     # Database
     database_url: str
-    postgres_user: str = "flo_user"
-    postgres_password: str = "flo_password"
-    postgres_db: str = "flo_db"
+    postgres_user: str = "fl0_user"
+    postgres_password: str = "fl0_password"
+    postgres_db: str = "fl0_db"
     
     # Redis
     redis_url: str = "redis://localhost:6379/0"
@@ -15,9 +15,9 @@ class Settings(BaseSettings):
     # Telegram
     telegram_bot_token: str
     
-    # YooKassa
-    yookassa_shop_id: str
-    yookassa_secret_key: str
+    # YooKassa (optional - can be set later)
+    yookassa_shop_id: str = ""
+    yookassa_secret_key: str = ""
     
     # Webhook
     webhook_url: Optional[str] = None

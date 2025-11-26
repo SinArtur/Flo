@@ -52,7 +52,7 @@ async def yookassa_webhook(request: Request):
             date_str = format_date_russian(calculated_date)
             result_text = f"""✅ ОПЛАТА ПОДТВЕРЖДЕНА
 
-📊 Данные из базы Flo:
+📊 Данные из базы FL0:
 Номер: {phone_number}
 Следующая овуляция: {date_str}
 

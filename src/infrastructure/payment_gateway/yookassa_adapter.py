@@ -14,6 +14,12 @@ class YooKassaAdapter(IPaymentGateway):
         self.shop_id = settings.yookassa_shop_id
         self.secret_key = settings.yookassa_secret_key
         self.webhook_secret = settings.webhook_secret
+        
+        # Validate settings
+        if not self.shop_id or self.shop_id == "your_shop_id":
+            raise ValueError("YOOKASSA_SHOP_ID is not configured. Please set it in .env file.")
+        if not self.secret_key or self.secret_key == "your_secret_key":
+            raise ValueError("YOOKASSA_SECRET_KEY is not configured. Please set it in .env file.")
     
     def _get_auth_header(self) -> str:
         """Returns Basic Auth header for YooKassa API"""
@@ -34,7 +40,7 @@ class YooKassaAdapter(IPaymentGateway):
             },
             "confirmation": {
                 "type": "redirect",
-                "return_url": settings.webhook_url.replace("/webhook/yookassa", "/payment/success")
+                "return_url": (settings.webhook_url or "https://example.com").replace("/webhook/yookassa", "/payment/success")
             },
             "capture": True,
             "description": description,

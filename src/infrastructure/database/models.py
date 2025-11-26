@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum as SQLEnum
+from sqlalchemy import Column, Integer, BigInteger, String, Float, DateTime, Date, Boolean, Enum as SQLEnum
 from sqlalchemy.sql import func
 from datetime import datetime, date
 from src.infrastructure.database.base import Base
@@ -9,7 +9,7 @@ class PaymentModel(Base):
     __tablename__ = "payments"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, nullable=False, index=True)
+    user_id = Column(BigInteger, nullable=False, index=True)
     phone_number = Column(String, nullable=False, index=True)
     amount = Column(Float, nullable=False, default=50.0)
     status = Column(SQLEnum(PaymentStatus), nullable=False, default=PaymentStatus.PENDING)
@@ -45,7 +45,7 @@ class UserModel(Base):
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, nullable=False, unique=True, index=True)  # Telegram user ID
+    user_id = Column(BigInteger, nullable=False, unique=True, index=True)  # Telegram user ID
     username = Column(String, nullable=True)
     consent_given_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -75,7 +75,7 @@ class UserRequestModel(Base):
     __tablename__ = "user_requests"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, nullable=False, index=True)
+    user_id = Column(BigInteger, nullable=False, index=True)
     phone_number = Column(String, nullable=False, index=True)
     calculated_date = Column(Date, nullable=True)
     cycle_number = Column(Integer, nullable=False, default=1)

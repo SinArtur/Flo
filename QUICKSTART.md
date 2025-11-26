@@ -1,4 +1,4 @@
-# Быстрый старт Flo Hack Bot
+# Быстрый старт FL0 Hack Bot
 
 ## Предварительные требования
 
@@ -14,10 +14,10 @@
 
 ```bash
 # Database
-POSTGRES_USER=flo_user
-POSTGRES_PASSWORD=flo_password
-POSTGRES_DB=flo_db
-DATABASE_URL=postgresql://flo_user:flo_password@postgres:5432/flo_db
+POSTGRES_USER=fl0_user
+POSTGRES_PASSWORD=fl0_password
+POSTGRES_DB=fl0_db
+DATABASE_URL=postgresql://fl0_user:fl0_password@postgres:5432/fl0_db
 
 # Redis
 REDIS_URL=redis://redis:6379/0
@@ -104,7 +104,7 @@ docker-compose up -d postgres redis
 
 3. Настройте `.env` с локальными URL:
 ```bash
-DATABASE_URL=postgresql://flo_user:flo_password@localhost:5432/flo_db
+DATABASE_URL=postgresql://fl0_user:fl0_password@localhost:5432/fl0_db
 REDIS_URL=redis://localhost:6379/0
 ```
 
@@ -136,7 +136,7 @@ docker-compose logs -f postgres
 ### Подключение к базе данных
 
 ```bash
-docker-compose exec postgres psql -U flo_user -d flo_db
+docker-compose exec postgres psql -U fl0_user -d fl0_db
 ```
 
 ### Подключение к Redis

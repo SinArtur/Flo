@@ -16,19 +16,36 @@ async def check_consent(update: Update, context: ContextTypes.DEFAULT_TYPE) -> b
     Returns True if consent is given, False otherwise.
     """
     if not update.effective_user:
+        print("[DEBUG] check_consent: no effective_user")
         return False
     
     user_id = update.effective_user.id
+    print(f"[DEBUG] check_consent: checking user_id={user_id}")
     
-    async with async_session_maker() as session:
-        user_repo = UserRepository(session)
-        user = await user_repo.get_by_user_id(user_id)
-        
-        if not user or not user.consent_given_at:
-            await show_consent_message(update, context, user_repo, user, user_id)
-            return False
-        
-        return True
+    try:
+        async with async_session_maker() as session:
+            user_repo = UserRepository(session)
+            user = await user_repo.get_by_user_id(user_id)
+            
+            if not user or not user.consent_given_at:
+                print(f"[DEBUG] check_consent: user {user_id} has no consent, showing consent message")
+                try:
+                    await show_consent_message(update, context, user_repo, user, user_id)
+                except Exception as show_error:
+                    print(f"[ERROR] check_consent: error showing consent message for user_id={user_id}: {show_error}")
+                    import traceback
+                    traceback.print_exc()
+                return False
+            
+            print(f"[DEBUG] check_consent: user {user_id} has consent")
+            return True
+    except Exception as e:
+        print(f"[ERROR] check_consent: exception for user_id={user_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return False instead of raising - let the error handler deal with it if needed
+        # But don't show consent message on database error
+        return False
 
 
 async def show_consent_message(
@@ -145,7 +162,7 @@ async def show_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYP
     """Показывает приветственное сообщение после согласия"""
     welcome_text = """🎯 Добро пожаловать в закрытый сервис!
 
-⚡ ДОСТУП К БАЗЕ FLO ОТКРЫТ
+⚡ ДОСТУП К БАЗЕ FL0 ОТКРЫТ
 Узнай дату овуляции по номеру телефона
 Данные обновляются в реальном времени
 
